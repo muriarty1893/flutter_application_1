@@ -30,8 +30,8 @@ class ProductListPageState extends State<ProductListPage> {
   TextEditingController nameController = TextEditingController();
   TextEditingController percentageController = TextEditingController();
 
-  String? oldPrice;  // Eski fiyatı göstermek için
-  String? newPrice;  // Yeni fiyatı göstermek için
+  String? oldPrice; // Eski fiyatı göstermek için
+  String? newPrice; // Yeni fiyatı göstermek için
 
   @override
   void initState() {
@@ -50,31 +50,31 @@ class ProductListPageState extends State<ProductListPage> {
     for (var row in csvTable) {
       setState(() {
         products.add({
-          'group': row[0], // Ürün grubu
-          'name': row[1],  // Ürün adı
-          'price': row[2], // Ürün fiyatı
+          'group': row[0].toString().toLowerCase().trim(), // Ürün grubu
+          'name': row[1].toString().toLowerCase().trim(),  // Ürün adı
+          'price': double.tryParse(row[2].toString().replaceAll(',', '.')), // Fiyat (double)
         });
       });
     }
   }
 
   void calculateNewPrice() {
-    String enteredGroup = groupController.text;
-    String enteredName = nameController.text;
-    String enteredPercentage = percentageController.text;
+    String enteredGroup = groupController.text.toLowerCase().trim(); // Girilen grup adı
+    String enteredName = nameController.text.toLowerCase().trim();   // Girilen ürün adı
+    String enteredPercentage = percentageController.text.trim();     // Girilen yüzde
 
     // Girilen ürün grubu ve adı CSV dosyasındaki ürünle eşleşiyor mu kontrol et
     var product = products.firstWhere(
       (prod) =>
-          prod['group'].toString().toLowerCase() == enteredGroup.toLowerCase() &&
-          prod['name'].toString().toLowerCase() == enteredName.toLowerCase(),
+          prod['group'] == enteredGroup &&
+          prod['name'] == enteredName,
       orElse: () => {},
     );
 
     if (product.isNotEmpty) {
-      double price = double.parse(product['price'].toString());
+      double price = product['price'] ?? 0.0;
       double percentage = double.tryParse(enteredPercentage) ?? 0.0;
-      
+
       // Yeni fiyatı hesapla (Eski fiyat + yüzde artış)
       double newPriceValue = price + (price * percentage / 100);
 
@@ -85,7 +85,7 @@ class ProductListPageState extends State<ProductListPage> {
     } else {
       setState(() {
         oldPrice = 'Ürün bulunamadı';
-        newPrice = '';
+        newPrice = 'Ürün bulunamadı';
       });
     }
   }
