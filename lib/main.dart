@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:csv/csv.dart';  // CSV paketini ekledik
+import 'package:csv/csv.dart'; // CSV paketini ekledik
 
 void main() => runApp(const MyApp());
 
@@ -19,13 +19,19 @@ class MyApp extends StatelessWidget {
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
-  
+
   @override
   ProductListPageState createState() => ProductListPageState();
 }
 
 class ProductListPageState extends State<ProductListPage> {
   List<Map<String, dynamic>> products = [];
+  TextEditingController groupController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
+  TextEditingController percentageController = TextEditingController();
+
+  String? oldPrice;  // Eski fiyatı göstermek için
+  String? newPrice;  // Yeni fiyatı göstermek için
 
   @override
   void initState() {
@@ -36,7 +42,7 @@ class ProductListPageState extends State<ProductListPage> {
   Future<void> loadCSVData() async {
     // CSV dosyasını assets klasöründen yükle
     final csvData = await rootBundle.loadString('assets/urunler.csv');
-    
+
     // CSV verisini bir tabloya dönüştür
     List<List<dynamic>> csvTable = const CsvToListConverter().convert(csvData);
 
@@ -44,9 +50,42 @@ class ProductListPageState extends State<ProductListPage> {
     for (var row in csvTable) {
       setState(() {
         products.add({
-          'name': row[0],  // Ürün adı
-          'price': row[1], // Ürün fiyatı
+          'group': row[0], // Ürün grubu
+          'name': row[1],  // Ürün adı
+          'price': row[2], // Ürün fiyatı
         });
+      });
+    }
+  }
+
+  void calculateNewPrice() {
+    String enteredGroup = groupController.text;
+    String enteredName = nameController.text;
+    String enteredPercentage = percentageController.text;
+
+    // Girilen ürün grubu ve adı CSV dosyasındaki ürünle eşleşiyor mu kontrol et
+    var product = products.firstWhere(
+      (prod) =>
+          prod['group'].toString().toLowerCase() == enteredGroup.toLowerCase() &&
+          prod['name'].toString().toLowerCase() == enteredName.toLowerCase(),
+      orElse: () => {},
+    );
+
+    if (product.isNotEmpty) {
+      double price = double.parse(product['price'].toString());
+      double percentage = double.tryParse(enteredPercentage) ?? 0.0;
+      
+      // Yeni fiyatı hesapla (Eski fiyat + yüzde artış)
+      double newPriceValue = price + (price * percentage / 100);
+
+      setState(() {
+        oldPrice = price.toStringAsFixed(2);
+        newPrice = newPriceValue.toStringAsFixed(2);
+      });
+    } else {
+      setState(() {
+        oldPrice = 'Ürün bulunamadı';
+        newPrice = '';
       });
     }
   }
@@ -55,19 +94,49 @@ class ProductListPageState extends State<ProductListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ürünler'),
+        title: const Text('Ürün Fiyat Hesaplayıcı'),
       ),
-      body: products.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(products[index]['name']),
-                  subtitle: Text('Alış Fiyatı: ${products[index]['price']} TL'),
-                );
-              },
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Ürün Grubu için input
+            TextField(
+              controller: groupController,
+              decoration: const InputDecoration(
+                labelText: 'Ürün Grubu',
+              ),
             ),
+            const SizedBox(height: 16),
+            // Ürün Adı için input
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Ürün Adı',
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Yüzdelik değer için input
+            TextField(
+              controller: percentageController,
+              decoration: const InputDecoration(
+                labelText: 'Yüzdelik Değer (%)',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            // Hesapla butonu
+            ElevatedButton(
+              onPressed: calculateNewPrice,
+              child: const Text('Hesapla'),
+            ),
+            const SizedBox(height: 16),
+            // Eski ve yeni fiyatları göster
+            if (oldPrice != null) Text('Eski Fiyat: $oldPrice'),
+            if (newPrice != null) Text('Yeni Fiyat: $newPrice'),
+          ],
+        ),
+      ),
     );
   }
 }
