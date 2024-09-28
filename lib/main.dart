@@ -21,10 +21,10 @@ class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
   
   @override
-  _ProductListPageState createState() => _ProductListPageState();
+  ProductListPageState createState() => ProductListPageState();
 }
 
-class _ProductListPageState extends State<ProductListPage> {
+class ProductListPageState extends State<ProductListPage> {
   List<Map<String, dynamic>> products = [];
 
   @override
